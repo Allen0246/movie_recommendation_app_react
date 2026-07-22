@@ -123,7 +123,9 @@ In Docker Desktop this shows up as two separate, independently-started container
 
 ### Loading movies from a wider date range
 
-By default, both the daily cron sync and the "Update" button only fetch movies released **today** — this keeps every routine sync fast. To backfill a historical range once (e.g. right after first deploying):
+By default, the daily cron sync only fetches movies released **today** — this keeps the routine sync fast. From the **Movies** page, any logged-in user can also set a **From date** on the "Update from TMDB" control to backfill a range up to **31 days** back through today in one click (e.g. catching up after a few days offline). The `tmdb-sync` Edge Function enforces that 31-day cap for regular (non-service-role) callers — see `MAX_USER_RANGE_DAYS` in `supabase/functions/tmdb-sync/index.ts`.
+
+For a larger one-off backfill (e.g. years of history right after first deploying), use the bootstrap script instead, which runs with the service role key and isn't subject to that cap:
 
 ```
 PRIMARY_RELEASE_DATE_GTE=2024-02-27 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/bootstrap-tmdb-sync.mjs
@@ -134,7 +136,7 @@ PRIMARY_RELEASE_DATE_GTE=2024-02-27 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=.
 * Register a new account at `/register` (new accounts get the `user` role) or use the seeded default accounts — see `.env.example` for the credentials you configured. **Note:** login is by **email**, not username (a deliberate change from the original app — Supabase Auth identifies accounts by email).
 * **Everyone (logged in):**
   * **Home** — landing page after login.
-  * **Movies** — browse movies currently in the database. **Update from TMDB** fetches new movies; **Export to Excel** downloads the list. Mark a movie as watched with a rating and date.
+  * **Movies** — browse movies currently in the database. **Update from TMDB** fetches new movies for a chosen date range: the **From date** picker defaults to today, but picking an earlier date backfills everything released from that date through today (capped at 31 days for logged-in users — see below for wider backfills). **Export to Excel** downloads the list. Mark a movie as watched with a rating and date.
   * **My Movies** — movies you've marked as watched, with your rating and date. Rewatch (re-rate/re-date) or mark not seen, or export the list.
   * **Recommendation** — pick a genre and get a random suggestion from movies you haven't marked as watched.
   * **Log Out**
@@ -284,7 +286,9 @@ A Docker Desktopban ez két külön, egymástól függetlenül induló konténer
 
 ### Filmek letöltése tágabb dátumintervallumból
 
-Alapesetben mind a napi cron szinkron, mind az **Update** gomb csak a **mai napon** megjelent filmeket tölti le — ez gyorsan tartja a rutin szinkronokat. Egy korábbi dátumtartomány egyszeri visszatöltéséhez (pl. közvetlenül az első éles telepítés után):
+Alapesetben a napi cron szinkron csak a **mai napon** megjelent filmeket tölti le — ez gyorsan tartja a rutin szinkront. A **Movies** oldalon bármelyik bejelentkezett felhasználó beállíthat egy **From date** dátumot az "Update from TMDB" vezérlőn, hogy egy kattintással legfeljebb **31 napra** visszamenőleg töltsön vissza filmeket a mai napig (pl. ha pár napig nem futott a szinkron). A `tmdb-sync` Edge Function ezt a 31 napos korlátot kényszeríti ki a nem service-role hívóknál — lásd `MAX_USER_RANGE_DAYS` a `supabase/functions/tmdb-sync/index.ts` fájlban.
+
+Egy ennél nagyobb, egyszeri visszatöltéshez (pl. évekre visszamenő adatokhoz közvetlenül az első éles telepítés után) használd a bootstrap szkriptet, amely a service role kulccsal fut, és nem vonatkozik rá ez a korlát:
 
 ```
 PRIMARY_RELEASE_DATE_GTE=2024-02-27 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/bootstrap-tmdb-sync.mjs
@@ -295,7 +299,7 @@ PRIMARY_RELEASE_DATE_GTE=2024-02-27 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=.
 * Regisztrálj egy új fiókot a `/register` oldalon (az új fiókok `user` szerepkört kapnak), vagy használd az előre létrehozott alapértelmezett fiókokat — lásd `.env.example` a beállított hitelesítő adatokért. **Megjegyzés:** a bejelentkezés **email** alapú, nem felhasználónév alapú (ez tudatos változás az eredeti alkalmazáshoz képest — a Supabase Auth email alapján azonosítja a fiókokat).
 * **Minden bejelentkezett felhasználó számára elérhető:**
   * **Home** — bejelentkezés utáni főoldal.
-  * **Movies** — az adatbázisban lévő filmek böngészése. Az **Update from TMDB** új filmeket tölt le, az **Export to Excel** letölti a listát. Egy film megtekintettnek jelölhető értékeléssel és dátummal.
+  * **Movies** — az adatbázisban lévő filmek böngészése. Az **Update from TMDB** egy választott dátumtartományból tölt le új filmeket: a **From date** dátumválasztó alapértelmezetten a mai napra áll, de egy korábbi dátum kiválasztásával az onnantól a mai napig megjelent összes film visszatölthető (bejelentkezett felhasználóknál legfeljebb 31 nap — lásd lentebb a tágabb visszatöltéshez). Az **Export to Excel** letölti a listát. Egy film megtekintettnek jelölhető értékeléssel és dátummal.
   * **My Movies** — a megtekintettnek jelölt filmek, az értékeléssel és dátummal. Újranézés (újraértékelés/újradátumozás) vagy megtekintetlenné jelölés, illetve exportálás.
   * **Recommendation** — műfaj kiválasztása után véletlenszerű ajánlást ad a még nem megtekintett filmek közül.
   * **Log Out**
