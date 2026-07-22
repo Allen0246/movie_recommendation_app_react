@@ -7,6 +7,11 @@ import { useMarkWatched, useRewatch, useUnwatch, useWatchedMovieIds } from '../h
 import { MovieTable } from '../components/MovieTable'
 import { RatingDialog } from '../components/RatingDialog'
 
+const todayLocal = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export function MoviesPage() {
   const { data: movies, isLoading } = useMovies()
   const { data: watchedIds } = useWatchedMovieIds()
@@ -19,12 +24,14 @@ export function MoviesPage() {
   const [updating, setUpdating] = useState(false)
   const [updateMessage, setUpdateMessage] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [fromDate, setFromDate] = useState(todayLocal())
 
   async function handleUpdate() {
     setUpdating(true)
     setUpdateMessage(null)
     try {
-      const { data, error } = await supabase.functions.invoke('tmdb-sync', { body: {} })
+      const body = fromDate ? { from: fromDate, to: todayLocal() } : {}
+      const { data, error } = await supabase.functions.invoke('tmdb-sync', { body })
       if (error) throw error
       setUpdateMessage(`Synced ${data.movies} movies, ${data.genres} genres.`)
       queryClient.invalidateQueries({ queryKey: ['movies'] })
@@ -55,13 +62,32 @@ export function MoviesPage() {
     <section>
       <h1>Movies</h1>
       <div className="toolbar">
-        <button type="button" onClick={handleUpdate} disabled={updating}>
-          {updating ? 'Updating...' : 'Update from TMDB'}
-        </button>
-        <button type="button" onClick={handleExport}>
-          Export to Excel
-        </button>
+        <div className="toolbar__filter">
+          <label htmlFor="updateFromDate">From date (defaults to today)</label>
+          <input
+            id="updateFromDate"
+            type="date"
+            max={todayLocal()}
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
+        </div>
+        <div className="toolbar__actions">
+          <button type="button" onClick={handleUpdate} disabled={updating}>
+            {updating
+              ? 'Updating...'
+              : fromDate === todayLocal()
+                ? 'Update from TMDB'
+                : `Update from ${fromDate}`}
+          </button>
+          <button type="button" onClick={handleExport}>
+            Export to Excel
+          </button>
+        </div>
       </div>
+      {fromDate !== todayLocal() && (
+        <p>Fetches movies released from {fromDate} through today (max 31-day range).</p>
+      )}
       {updateMessage && <p>{updateMessage}</p>}
       {actionError && <p role="alert">{actionError}</p>}
 

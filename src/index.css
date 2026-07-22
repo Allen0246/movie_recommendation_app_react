@@ -185,6 +185,7 @@ main {
 .toolbar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -192,6 +193,27 @@ main {
 .toolbar button[type='button'],
 .toolbar .btn {
   align-self: auto;
+}
+
+.toolbar__filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex-basis: 100%;
+}
+
+.toolbar__filter label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+.toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 /* Navbar */
