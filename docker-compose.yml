@@ -1,0 +1,39 @@
+# Dockerizes the web app + nginx for local dev, mirroring the old Flask setup's
+# nginx-in-front-of-the-app topology. The database/backend layer (Postgres, Auth,
+# REST, Storage, Edge Functions) stays managed by `supabase start` separately -
+# it's already a whole Docker Compose stack under the hood (see `docker network
+# ls` / `supabase status`), and reimplementing Kong/GoTrue/PostgREST by hand here
+# would just duplicate that for no benefit.
+#
+# Usage: run `supabase start` first (once), then `docker compose up` here.
+# App is served at http://localhost:8090 (nginx -> web's Vite dev server, with
+# HMR proxied through). Supabase's own API stays reachable directly at
+# http://127.0.0.1:54321, unchanged - VITE_SUPABASE_URL in .env.local already
+# points there, and the browser (not this compose stack) is what resolves it.
+
+name: movie_app_web
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env.docker
+    # Predev's seed script runs inside this container, so it needs Supabase's
+    # API reachable from inside Docker - not 127.0.0.1 (that's the container
+    # itself), but the host, via Docker Desktop's host.docker.internal.
+    environment:
+      - SUPABASE_URL=http://host.docker.internal:54321
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8090:80"
+    volumes:
+      - ./nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web

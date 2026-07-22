@@ -1,0 +1,18 @@
+node_modules
+dist
+dist-ssr
+logs
+.git
+
+# Secrets: docker-compose.yml's `web` service reads .env.docker via `env_file` at
+# container *start* from the host, so nothing here is needed at runtime — but
+# without these, `docker build`'s COPY would still bake real secrets (service-role
+# key, admin passwords, supabase/.env.local's TMDB token) into an image layer,
+# outliving any later key rotation. Unlike .gitignore, .dockerignore does NOT treat
+# a bare pattern as matching at every depth -- `*.local` alone only matches at the
+# build context root, silently missing supabase/.env.local. Every pattern here
+# must be `**/`-prefixed to actually be recursive (verified by building the image
+# and inspecting its filesystem, not just reading the pattern text).
+**/*.local
+**/.env
+**/.env.docker
